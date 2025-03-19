@@ -1,16 +1,29 @@
 package com.company.msa.controller;
 
 
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import com.company.msa.entity.Board;
+import com.company.msa.repository.BoardRepository;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
-@RequestMapping("/api/board")
+@RequestMapping("/api/boards")
 public class BoardController {
 
-    @GetMapping("/hello")
-    public String hello() {
-        return "Hello, Board API!";
+    private final BoardRepository boardRepository;
+
+    public BoardController(BoardRepository boardRepository) {
+        this.boardRepository = boardRepository;
+    }
+
+    @GetMapping
+    public List<Board> getBoards() {
+        return boardRepository.findAll();
+    }
+
+    @PostMapping
+    public Board createBoard(@RequestBody Board board) {
+        return boardRepository.save(board);
     }
 }
