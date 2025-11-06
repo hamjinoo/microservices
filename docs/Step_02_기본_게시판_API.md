@@ -360,10 +360,12 @@ import com.project.board.model.Post;
 import com.project.board.repository.PostRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 
 @Service  // 서비스 빈 등록
 @RequiredArgsConstructor  // final 필드 생성자 자동 생성
+@Transactional(readOnly = true)  // 읽기 전용은 기본값
 public class PostService {
 
     private final PostRepository postRepository;
@@ -376,15 +378,17 @@ public class PostService {
     // ID로 조회
     public Post findById(Long id) {
         return postRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("게시글을 찾을 수 없습니다."));
+                .orElseThrow(() -> new RuntimeException("게시글을 찾을 수 없습니다. ID: " + id));
     }
 
     // 저장 (생성 & 수정)
+    @Transactional  // 쓰기 작업은 트랜잭션 필요
     public Post save(Post post) {
         return postRepository.save(post);
     }
 
     // 수정
+    @Transactional
     public Post update(Long id, Post post) {
         Post existingPost = findById(id);
         existingPost.setTitle(post.getTitle());
@@ -393,7 +397,11 @@ public class PostService {
     }
 
     // 삭제
+    @Transactional
     public void delete(Long id) {
+        if (!postRepository.existsById(id)) {
+            throw new RuntimeException("게시글을 찾을 수 없습니다. ID: " + id);
+        }
         postRepository.deleteById(id);
     }
 }
@@ -407,6 +415,67 @@ public PostService(PostRepository postRepository) {
     this.postRepository = postRepository;
 }
 ```
+
+#### BoardService 생성
+
+```java
+// src/main/java/com/project/board/service/BoardService.java
+
+package com.project.board.service;
+
+import com.project.board.model.Board;
+import com.project.board.repository.BoardRepository;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import java.util.List;
+
+@Service
+@RequiredArgsConstructor
+@Transactional(readOnly = true)  // 읽기 전용은 기본값
+public class BoardService {
+
+    private final BoardRepository boardRepository;
+
+    // 전체 조회
+    public List<Board> findAll() {
+        return boardRepository.findAll();
+    }
+
+    // ID로 조회
+    public Board findById(Long id) {
+        return boardRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("게시판을 찾을 수 없습니다. ID: " + id));
+    }
+
+    // 저장 (생성 & 수정)
+    @Transactional  // 쓰기 작업은 트랜잭션 필요
+    public Board save(Board board) {
+        return boardRepository.save(board);
+    }
+
+    // 수정
+    @Transactional
+    public Board update(Long id, Board board) {
+        Board existingBoard = findById(id);
+        existingBoard.setName(board.getName());
+        return boardRepository.save(existingBoard);
+    }
+
+    // 삭제
+    @Transactional
+    public void delete(Long id) {
+        if (!boardRepository.existsById(id)) {
+            throw new RuntimeException("게시판을 찾을 수 없습니다. ID: " + id);
+        }
+        boardRepository.deleteById(id);
+    }
+}
+```
+
+**트랜잭션 설명**:
+- `@Transactional(readOnly = true)`: 클래스 레벨에서 읽기 전용 설정 (성능 최적화)
+- `@Transactional`: 쓰기 작업(저장/수정/삭제)에만 트랜잭션 적용
 
 ---
 
@@ -491,6 +560,67 @@ app.post("/api/posts", (req, res) => {
 });
 ```
 
+#### BoardController 생성
+
+```java
+// src/main/java/com/project/board/controller/BoardController.java
+
+package com.project.board.controller;
+
+import com.project.board.model.Board;
+import com.project.board.service.BoardService;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+import java.util.List;
+
+@RestController
+@RequestMapping("/api/boards")
+@RequiredArgsConstructor
+public class BoardController {
+
+    private final BoardService boardService;
+
+    // GET /api/boards - 전체 조회
+    @GetMapping
+    public ResponseEntity<List<Board>> list() {
+        List<Board> boards = boardService.findAll();
+        return ResponseEntity.ok(boards);
+    }
+
+    // GET /api/boards/{id} - 상세 조회
+    @GetMapping("/{id}")
+    public ResponseEntity<Board> get(@PathVariable Long id) {
+        Board board = boardService.findById(id);
+        return ResponseEntity.ok(board);
+    }
+
+    // POST /api/boards - 생성
+    @PostMapping
+    public ResponseEntity<Board> create(@RequestBody Board board) {
+        Board savedBoard = boardService.save(board);
+        return ResponseEntity.status(HttpStatus.CREATED).body(savedBoard);
+    }
+
+    // PUT /api/boards/{id} - 수정
+    @PutMapping("/{id}")
+    public ResponseEntity<Board> update(
+            @PathVariable Long id,
+            @RequestBody Board board) {
+        Board updatedBoard = boardService.update(id, board);
+        return ResponseEntity.ok(updatedBoard);
+    }
+
+    // DELETE /api/boards/{id} - 삭제
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> delete(@PathVariable Long id) {
+        boardService.delete(id);
+        return ResponseEntity.noContent().build();
+    }
+}
+```
+
 ---
 
 ### 5. application.properties 설정
@@ -544,13 +674,14 @@ logging.level.org.hibernate.type.descriptor.sql.BasicBinder=TRACE
 ### Step 3: Service 생성
 
 1. `service` 패키지 생성
-2. `PostService.java` 생성
+2. `PostService.java`, `BoardService.java` 생성
 3. CRUD 메서드 작성
+4. `@Transactional` 어노테이션 추가
 
 ### Step 4: Controller 생성
 
 1. `controller` 패키지 생성
-2. `PostController.java` 생성
+2. `PostController.java`, `BoardController.java` 생성
 3. REST API 엔드포인트 작성
 
 ### Step 5: 애플리케이션 실행

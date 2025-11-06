@@ -37,25 +37,22 @@ src/main/java/com/project/board/
 ├── controller/          # REST API 컨트롤러
 │   ├── BoardController.java
 │   ├── PostController.java
-│   └── ReplyController.java
+│   └── ReplyController.java (Step 3에서 추가 예정)
 ├── service/            # 비즈니스 로직
 │   ├── BoardService.java
 │   ├── PostService.java
-│   └── ReplyService.java
+│   └── ReplyService.java (Step 3에서 추가 예정)
 ├── repository/         # 데이터 접근 계층
 │   ├── BoardRepository.java
 │   ├── PostRepository.java
-│   └── ReplyRepository.java
+│   └── ReplyRepository.java (Step 3에서 추가 예정)
 ├── model/             # 엔티티
-│   ├── BaseEntity.java      # 공통 필드 (생성일, 수정일)
 │   ├── Board.java
 │   ├── Post.java
-│   └── Reply.java
-├── dto/               # 데이터 전송 객체
-│   └── ApiResponse.java     # 표준 응답 구조
-├── exception/         # 예외 처리
-│   ├── EntityNotFoundException.java
-│   └── GlobalExceptionHandler.java
+│   ├── Reply.java (Step 3에서 추가 예정)
+│   └── BaseEntity.java (Step 3에서 추가 예정)
+├── dto/               # 데이터 전송 객체 (Step 3에서 추가 예정)
+├── exception/         # 예외 처리 (Step 3에서 추가 예정)
 └── BoardApplication.java    # 메인 애플리케이션
 ```
 
@@ -115,7 +112,7 @@ http://localhost:8080/api
 | PUT    | `/api/posts/{id}` | 게시글 수정      |
 | DELETE | `/api/posts/{id}` | 게시글 삭제      |
 
-### 댓글 API
+### 댓글 API (Step 3에서 추가 예정)
 
 | Method | Endpoint                                | 설명           |
 | ------ | --------------------------------------- | -------------- |
@@ -260,30 +257,26 @@ spring.datasource.password=your_password
 ## 🧩 엔티티 구조
 
 ```
-Board (게시판)
+Board (게시판) - 현재 구현 완료
   ├── id: Long
   ├── name: String
-  ├── posts: List<Post>
-  ├── createdAt: LocalDateTime
-  └── updatedAt: LocalDateTime
+  └── posts: List<Post>
+  └── createdAt, updatedAt (Step 3에서 추가 예정)
 
-Post (게시글)
+Post (게시글) - 현재 구현 완료
   ├── id: Long
   ├── title: String
   ├── content: String
-  ├── viewCount: Long
   ├── board: Board (N:1)
-  ├── replies: List<Reply> (1:N)
-  ├── createdAt: LocalDateTime
-  └── updatedAt: LocalDateTime
+  └── replies: List<Reply> (Step 3에서 추가)
+  └── createdAt, updatedAt (Step 3에서 추가 예정)
 
-Reply (댓글)
+Reply (댓글) - Step 3에서 추가 예정
   ├── id: Long
   ├── commenter: String
   ├── content: String
   ├── post: Post (N:1)
-  ├── createdAt: LocalDateTime
-  └── updatedAt: LocalDateTime
+  └── createdAt: LocalDateTime
 ```
 
 ## 🎯 코드 품질
@@ -334,12 +327,14 @@ Reply (댓글)
 
 - [x] 스프링부트 프로젝트 구조 이해
 - [x] IoC/DI 개념 학습
-- [x] 게시판/게시글/댓글 CRUD API
-- [x] JPA Entity 및 연관관계 매핑
-- [x] 예외 처리 및 표준 응답
-- [x] 입력 검증 (Validation)
-- [x] 트랜잭션 관리
-- [x] 조회수 기능
+- [x] 게시판(Board) CRUD API
+- [x] 게시글(Post) CRUD API
+- [x] JPA Entity 및 연관관계 매핑 (Board ↔ Post)
+- [x] 트랜잭션 관리 (@Transactional)
+- [ ] 예외 처리 및 표준 응답 (Step 3에서 추가 예정)
+- [ ] 입력 검증 (Validation) (Step 4에서 추가 예정)
+- [ ] 댓글(Reply) 기능 (Step 3에서 추가 예정)
+- [ ] 조회수 기능 (Step 3에서 추가 예정)
 
 ### 🔄 진행 예정 (Step 3-10)
 
