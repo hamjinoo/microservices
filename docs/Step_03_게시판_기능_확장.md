@@ -221,53 +221,137 @@ public class Reply {
 ```java
 // Post Entity에 추가
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import java.util.ArrayList;
+import java.util.List;
+import jakarta.persistence.OneToMany;
+
 @Entity
 @Data
 public class Post {
     // 기존 필드들...
     
-    @OneToMany(mappedBy = "reply")
+    @OneToMany(mappedBy = "post")  // Reply Entity의 post 필드와 매핑
     @JsonIgnore  // 순환 참조 방지
     private List<Reply> replies = new ArrayList<>();
 }
 ```
 
+**주의**: `mappedBy = "post"`는 Reply Entity에서 Post를 참조하는 필드명과 일치해야 합니다.
+
 ---
 
 ### 2. 페이징 구현
 
-#### Repository
+#### 📝 구현 순서 (중요!)
+
+페이징 기능을 구현할 때는 **아래에서 위로** 순서대로 작성합니다:
+
+```
+1. Repository (데이터 접근) 
+   ↓
+2. Service (비즈니스 로직)
+   ↓
+3. Controller (API 엔드포인트)
+```
+
+**왜 이 순서인가?**
+- Repository가 없으면 Service가 동작하지 않음
+- Service가 없으면 Controller가 동작하지 않음
+- **의존성 방향**: Controller → Service → Repository
+
+#### Step 1: Repository 확인
+
 ```java
 // PostRepository는 이미 JpaRepository 상속
 // → Page 메서드 자동 제공
 ```
 
-#### Service
+**JpaRepository가 자동 제공하는 페이징 메서드**:
+- `Page<T> findAll(Pageable pageable)` - 페이징 전체 조회
+- `Page<T> findAll(Specification<T> spec, Pageable pageable)` - 조건부 페이징
+
+**현재 PostRepository**:
+```java
+// src/main/java/com/project/board/repository/PostRepository.java
+
+@Repository
+public interface PostRepository extends JpaRepository<Post, Long> {
+    // JpaRepository가 이미 findAll(Pageable) 메서드를 제공하므로
+    // 별도로 선언하지 않아도 사용 가능!
+}
+```
+
+**추가 메서드가 필요한 경우** (예: 게시판별 페이징):
+```java
+public interface PostRepository extends JpaRepository<Post, Long> {
+    // 게시판별 페이징 조회 (JPA Query Method)
+    Page<Post> findByBoardId(Long boardId, Pageable pageable);
+}
+```
+
+#### Step 2: Service에 페이징 메서드 추가
+
+**기존 Service 코드 확인**:
+```java
+// 현재 PostService.java
+public List<Post> findAll() {
+    return postRepository.findAll();  // 전체 조회 (List 반환)
+}
+```
+
+**페이징 메서드 추가** (기존 메서드는 유지):
 ```java
 // src/main/java/com/project/board/service/PostService.java
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+// ... 기존 import들 ...
 
 @Service
 @RequiredArgsConstructor
+@Transactional(readOnly = true)
 public class PostService {
     
     private final PostRepository postRepository;
     
-    // 페이징 조회
+    // 기존 메서드 유지 (List 반환)
+    public List<Post> findAll() {
+        return postRepository.findAll();
+    }
+    
+    // ✅ 새로 추가: 페이징 조회 (Page 반환)
     public Page<Post> findAll(Pageable pageable) {
         return postRepository.findAll(pageable);
     }
     
-    // 게시판별 페이징 조회
+    // ✅ 선택사항: 게시판별 페이징 조회
     public Page<Post> findByBoardId(Long boardId, Pageable pageable) {
         return postRepository.findByBoardId(boardId, pageable);
     }
+    
+    // 기존 메서드들도 유지 (findById, save, update, delete 등)
 }
 ```
 
-#### Controller
+**주의사항**:
+- ✅ 기존 `findAll()` 메서드는 그대로 유지 (하위 호환성)
+- ✅ 새로운 `findAll(Pageable pageable)` 메서드 추가 (오버로딩)
+- ✅ 메서드 이름이 같지만 파라미터가 다르면 다른 메서드로 인식됨 (Java 오버로딩)
+
+#### Step 3: Controller에 페이징 엔드포인트 추가
+
+**기존 Controller 코드 확인**:
+```java
+// 현재 PostController.java
+@GetMapping
+public ResponseEntity<List<Post>> list() {
+    List<Post> posts = postService.findAll();
+    return ResponseEntity.ok(posts);
+}
+```
+
+**선택지 1: 기존 메서드를 페이징으로 변경** (권장)
 ```java
 // src/main/java/com/project/board/controller/PostController.java
 
@@ -275,6 +359,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+// ... 기존 import들 ...
 
 @RestController
 @RequestMapping("/api/posts")
@@ -283,29 +368,137 @@ public class PostController {
     
     private final PostService postService;
     
-    // GET /api/posts?page=0&size=10&sort=createdAt,desc
+    // ✅ 기존 메서드를 페이징으로 변경
+    // GET /api/posts?page=0&size=10&sort=id,desc
     @GetMapping
     public ResponseEntity<Page<Post>> list(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
-            @RequestParam(defaultValue = "createdAt") String sortBy,
+            @RequestParam(defaultValue = "id") String sortBy,
             @RequestParam(defaultValue = "DESC") String direction) {
         
+        // Sort.Direction 변환
         Sort.Direction sortDirection = Sort.Direction.fromString(direction);
+        
+        // Pageable 객체 생성 (페이지 번호, 크기, 정렬)
         Pageable pageable = PageRequest.of(page, size, 
                                             Sort.by(sortDirection, sortBy));
         
+        // Service 호출 (이제 Page 반환)
         Page<Post> posts = postService.findAll(pageable);
         return ResponseEntity.ok(posts);
     }
+    
+    // 기존 메서드들 유지 (get, create, update, delete)
 }
 ```
 
+**선택지 2: 페이징 전용 엔드포인트 추가** (기존 API 유지)
+```java
+@GetMapping
+public ResponseEntity<List<Post>> list() {
+    // 기존 전체 조회 유지
+    List<Post> posts = postService.findAll();
+    return ResponseEntity.ok(posts);
+}
+
+@GetMapping("/paged")  // 새로운 엔드포인트
+public ResponseEntity<Page<Post>> listPaged(
+        @RequestParam(defaultValue = "0") int page,
+        @RequestParam(defaultValue = "10") int size,
+        @RequestParam(defaultValue = "id") String sortBy,
+        @RequestParam(defaultValue = "DESC") String direction) {
+    
+    Sort.Direction sortDirection = Sort.Direction.fromString(direction);
+    Pageable pageable = PageRequest.of(page, size, 
+                                        Sort.by(sortDirection, sortBy));
+    Page<Post> posts = postService.findAll(pageable);
+    return ResponseEntity.ok(posts);
+}
+```
+
+**각 코드 라인 설명**:
+```java
+// 1. URL 파라미터 받기
+@RequestParam(defaultValue = "0") int page  // 페이지 번호 (0부터 시작)
+@RequestParam(defaultValue = "10") int size // 페이지 크기 (한 페이지당 개수)
+@RequestParam(defaultValue = "id") String sortBy  // 정렬 기준 필드
+@RequestParam(defaultValue = "DESC") String direction  // 정렬 방향
+
+// 2. Sort.Direction 변환
+Sort.Direction sortDirection = Sort.Direction.fromString(direction);
+// "DESC" → Sort.Direction.DESC
+// "ASC" → Sort.Direction.ASC
+
+// 3. Pageable 객체 생성
+Pageable pageable = PageRequest.of(page, size, Sort.by(sortDirection, sortBy));
+// PageRequest.of(0, 10, Sort.by(DESC, "id"))
+// → 0번째 페이지, 10개씩, id 기준 내림차순
+
+// 4. Service 호출
+Page<Post> posts = postService.findAll(pageable);
+// Page 객체에는 데이터뿐만 아니라 페이징 정보도 포함됨
+```
+
+#### Step 4: 테스트
+
 **Postman 테스트**:
 ```
+# 기본 페이징 (파라미터 없으면 기본값 사용)
+GET http://localhost:8080/api/posts
+→ page=0, size=10, sort=id, direction=DESC
+
+# 첫 페이지, 5개씩
 GET http://localhost:8080/api/posts?page=0&size=5
+
+# 두 번째 페이지, 5개씩
 GET http://localhost:8080/api/posts?page=1&size=5
-GET http://localhost:8080/api/posts?page=0&size=10&sort=title,asc
+
+# 정렬 옵션 변경
+GET http://localhost:8080/api/posts?page=0&size=10&sort=id&direction=DESC
+GET http://localhost:8080/api/posts?page=0&size=10&sort=title&direction=ASC
+```
+
+**응답 예시**:
+```json
+{
+  "content": [
+    {"id": 10, "title": "게시글 10", ...},
+    {"id": 9, "title": "게시글 9", ...},
+    ...
+  ],
+  "totalElements": 100,    // 전체 게시글 수
+  "totalPages": 10,        // 전체 페이지 수
+  "size": 10,              // 페이지 크기
+  "number": 0,             // 현재 페이지 번호
+  "first": true,           // 첫 페이지 여부
+  "last": false,           // 마지막 페이지 여부
+  "numberOfElements": 10   // 현재 페이지의 요소 개수
+}
+```
+
+**참고**: Post Entity에 `createdAt` 필드를 추가하면 `sort=createdAt&direction=DESC`도 사용 가능합니다.
+
+---
+
+#### 📌 전체 구현 순서 요약
+
+```
+1. Repository 확인
+   → JpaRepository가 이미 findAll(Pageable) 제공
+   → 필요시 커스텀 메서드 추가 (findByBoardId 등)
+
+2. Service에 페이징 메서드 추가
+   → Page<Post> findAll(Pageable pageable) 추가
+   → 기존 List<Post> findAll() 유지 (선택)
+
+3. Controller에 페이징 파라미터 추가
+   → @RequestParam으로 page, size, sortBy, direction 받기
+   → Pageable 객체 생성
+   → Service 호출
+
+4. 테스트
+   → Postman으로 다양한 파라미터 조합 테스트
 ```
 
 ---
@@ -338,8 +531,15 @@ public interface PostRepository extends JpaRepository<Post, Long> {
 
 #### Service에 검색 메서드 추가
 ```java
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import lombok.RequiredArgsConstructor;
+
 @Service
 @RequiredArgsConstructor
+@Transactional(readOnly = true)
 public class PostService {
     
     private final PostRepository postRepository;
@@ -409,12 +609,14 @@ public class PostDTO {
                 .content(post.getContent())
                 .boardName(post.getBoard() != null ? 
                           post.getBoard().getName() : null)
-                .replyCount(post.getReplies().size())
-                .createdAt(post.getCreatedAt())
+                .replyCount(post.getReplies() != null ? 
+                           post.getReplies().size() : 0)
+                .createdAt(post.getCreatedAt())  // Post Entity에 createdAt 필드가 있는 경우
                 .build();
     }
-}
 ```
+
+**주의**: Post Entity에 `createdAt` 필드가 없는 경우, 이 줄을 제거하거나 `null`로 설정해야 합니다.
 
 #### Controller에서 DTO 사용
 ```java
