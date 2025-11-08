@@ -82,18 +82,10 @@ const fetchPosts = async () => {
 - 확장 용이 (마이크로서비스 적합)
 ```
 
-#### 프론트엔드 비유
+#### 실생활 비유
 
-```javascript
-// 세션 = 쿠키 (자동 전송)
-document.cookie = "sessionId=abc123";
-
-// JWT = localStorage (수동 전송)
-localStorage.setItem('token', 'eyJhbGciOiJIUzI1...');
-fetch('/api/posts', {
-    headers: { 'Authorization': 'Bearer ' + localStorage.getItem('token') }
-});
-```
+- **세션 방식**은 놀이공원에서 손목에 도장을 찍어 주는 것과 비슷합니다. 입장한 뒤에는 손목의 도장(세션 ID)을 보여주기만 하면 출입구에서 다시 확인할 수 있지만, 도장을 찍어 준 직원이 어느 출입구에 있는지 계속 기억하고 있어야 합니다.
+- **토큰 방식(JWT)**은 입장 시 일회용 티켓을 발급해 주고, 이후에는 그 티켓 자체에 진위 여부가 담겨 있어 어디서나 스스로 검증할 수 있는 것과 같습니다. 티켓을 보여주면 출입구마다 같은 기준으로 확인할 수 있어 여러 출입구를 운영하기 편합니다.
 
 ---
 
@@ -153,22 +145,10 @@ HMACSHA256(
 [Controller]
 ```
 
-#### 프론트엔드 비유: Middleware
+#### 실생활 비유: 공항 보안 검색대
 
-```javascript
-// Express.js Middleware
-app.use((req, res, next) => {
-    const token = req.headers.authorization;
-    if (!token) return res.status(401).send('Unauthorized');
-    
-    // 토큰 검증
-    const user = verifyToken(token);
-    req.user = user;  // 사용자 정보 추가
-    next();
-});
-
-// Spring Security도 비슷 (Filter Chain)
-```
+- 공항에 들어서면 여러 개의 검색대를 거칩니다. 탑승권 확인 → 신분증 확인 → 보안 검색 순으로 이어지며, 어느 한 단계라도 통과하지 못하면 게이트까지 갈 수 없습니다.
+- Spring Security의 필터 체인도 마찬가지로, 요청이 컨트롤러에 도착하기 전에 인증, 권한, 토큰 검증 등의 절차를 순서대로 통과시켜 안전하게 처리합니다.
 
 ---
 

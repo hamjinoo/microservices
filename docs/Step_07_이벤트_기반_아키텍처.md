@@ -33,23 +33,11 @@ Post Service → [Message Queue] → User Service
 - 이벤트 재처리 가능
 ```
 
-### 프론트엔드 비유
+### 실생활 비유
 
-```javascript
-// 동기 (await)
-const user = await fetchUser();  // 기다림
-console.log(user);
-
-// 비동기 (Promise)
-fetchUser().then(user => console.log(user));  // 기다리지 않음
-// 다음 코드 즉시 실행
-
-// 이벤트 (EventEmitter)
-eventEmitter.on('userCreated', (user) => {
-    console.log('새 사용자:', user);
-});
-eventEmitter.emit('userCreated', { id: 1, name: '홍길동' });
-```
+- 동기 방식은 은행 창구에서 번호표를 뽑고 차례가 올 때까지 창구 앞에서 기다리는 것과 같습니다.
+- 비동기 방식은 수리 서비스를 신청하고 접수증만 받은 뒤, 기사가 수리가 끝나면 연락을 주는 방식과 같습니다. 맡겨둔 뒤에는 다른 업무를 계속할 수 있습니다.
+- 이벤트 기반 아키텍처는 결혼식 하객에게 문자 알림을 보내거나 택배 알림을 보내는 것처럼, 특정 사건이 일어났을 때 필요한 사람에게 자동으로 알려 주는 구조입니다.
 
 ---
 

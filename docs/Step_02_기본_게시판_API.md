@@ -53,36 +53,12 @@ Type/Interface (모델)   ←→    Entity (데이터 구조)
 | **Repository** | 데이터베이스 CRUD        | 비즈니스 로직            |
 | **Entity**     | 데이터 구조 정의         | 로직 포함 X              |
 
-#### 프론트엔드 비유
+#### 실생활 비유
 
-```javascript
-// Component (Controller)
-function PostList() {
-  const { posts, createPost } = usePostService(); // Service 사용
-
-  return (
-    <div>
-      {posts.map((post) => (
-        <PostItem post={post} />
-      ))}
-    </div>
-  );
-}
-
-// Service (Service)
-function usePostService() {
-  const fetchPosts = async () => {
-    const data = await postApi.getAll(); // Repository 사용
-    // 비즈니스 로직 (필터링, 변환 등)
-    return data;
-  };
-}
-
-// API Call (Repository)
-const postApi = {
-  getAll: () => fetch("/api/posts").then((res) => res.json()),
-};
-```
+- **Controller**는 민원 창구에서 시민을 맞이하는 상담원처럼, 들어온 요청서를 가장 먼저 받습니다.
+- **Service**는 상담원이 받은 내용을 검토해 해결책을 찾는 내부 실무팀과 같습니다.
+- **Repository**는 자료 보관실에서 필요한 서류를 대신 찾아오는 기록 담당자에 해당합니다.
+- **Entity**는 보관실에 보관된 서류 양식 한 장으로, 정보가 어떤 구조로 저장되는지 정의합니다.
 
 ---
 
@@ -93,17 +69,11 @@ const postApi = {
 - 자바에서 **ORM**(Object-Relational Mapping)을 사용하기 위한 표준
 - **ORM**: 객체와 데이터베이스 테이블을 자동으로 매핑
 
-#### 프론트엔드 비유: TypeScript Type vs Database Table
+#### 실생활 비유: 종이 서류와 전산 기록
 
-```typescript
-// TypeScript Interface (프론트)
-interface Post {
-  id: number;
-  title: string;
-  content: string;
-  createdAt: Date;
-}
-```
+- 주민센터에서 주민등록 카드를 작성하면 카드에 이름, 주소, 생년월일이 기재됩니다.
+- 행정 시스템에서는 같은 정보를 표 형태로 저장해 두고, 카드와 전산 기록이 서로 일치하도록 관리합니다.
+- 엔티티 클래스는 "어떤 항목을 기록할지" 정한 종이 서류 양식과 같고, 데이터베이스 테이블은 그 서류를 정리해 두는 전산 캐비닛입니다.
 
 ```java
 // JPA Entity (백엔드)
@@ -155,13 +125,7 @@ public interface PostRepository extends JpaRepository<Post, Long> {
 }
 ```
 
-**프론트엔드 비유**: React Query, SWR
-
-```javascript
-// React Query - CRUD 함수를 자동으로 제공
-const { data, refetch } = useQuery("posts", fetchPosts);
-const { mutate } = useMutation(createPost);
-```
+**실생활 비유**: 자주 쓰는 서류를 업무 서랍 맨 앞 칸에 정리해 두면 직원이 복잡한 절차 없이 바로 꺼내 쓸 수 있습니다. JPA Repository도 규칙만 지키면 기본적인 저장·조회 업무를 자동으로 꺼내 쓸 수 있도록 도와줍니다.
 
 ---
 
@@ -199,29 +163,7 @@ public class Post {
 }
 ```
 
-**프론트엔드 비유**: 중첩된 데이터
-
-```javascript
-// Board
-{
-    id: 1,
-    name: "공지사항",
-    posts: [  // 1:N 관계
-        { id: 1, title: "첫 글" },
-        { id: 2, title: "두 번째 글" }
-    ]
-}
-
-// Post
-{
-    id: 1,
-    title: "첫 글",
-    board: {  // N:1 관계
-        id: 1,
-        name: "공지사항"
-    }
-}
-```
+**실생활 비유**: 한 학교(게시판) 안에는 여러 학급(게시글)이 속해 있고, 각 학급은 다시 어느 학교에 소속되어 있는지 기록됩니다. 학급 명부를 볼 때 "1학년 2반(학교 A)"처럼 서로 연결된 정보가 함께 적히는 것과 같습니다.
 
 ---
 
@@ -474,6 +416,7 @@ public class BoardService {
 ```
 
 **트랜잭션 설명**:
+
 - `@Transactional(readOnly = true)`: 클래스 레벨에서 읽기 전용 설정 (성능 최적화)
 - `@Transactional`: 쓰기 작업(저장/수정/삭제)에만 트랜잭션 적용
 
@@ -546,19 +489,9 @@ public class PostController {
 - `@RequestBody`: HTTP Body의 JSON을 객체로 변환
 - `ResponseEntity`: HTTP 상태 코드와 함께 응답
 
-**프론트엔드 비유**:
+**실생활 비유**:
 
-```javascript
-// Express.js
-app.get("/api/posts", (req, res) => {
-  res.json(posts);
-});
-
-app.post("/api/posts", (req, res) => {
-  const post = req.body;
-  res.status(201).json(post);
-});
-```
+- 민원 창구에서 "서류 목록을 보여 주세요"라고 요청하면 담당자가 보관함에서 목록을 꺼내 보여 주고(GET), "새 신청서를 접수합니다"라고 말하면 접수 담당자가 서류를 받고 접수 도장을 찍어 줍니다(POST). 컨트롤러도 같은 방식으로 요청을 받아 결과를 되돌려줍니다.
 
 #### BoardController 생성
 

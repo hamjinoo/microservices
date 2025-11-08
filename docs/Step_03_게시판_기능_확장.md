@@ -9,6 +9,7 @@
 ### 기본 CRUD만으로는 부족하다
 
 Step 2에서 만든 API는 동작하지만 실무에서는 부족합니다:
+
 - ❌ 게시글 1000개를 한 번에 조회? (느림)
 - ❌ 특정 게시글을 찾으려면? (검색 기능 없음)
 - ❌ 댓글 기능은? (추가 Entity 필요)
@@ -44,26 +45,11 @@ Step 2에서 만든 API는 동작하지만 실무에서는 부족합니다:
 → 사용자 경험 좋음
 ```
 
-#### 프론트엔드 비유
+#### 실생활 비유
 
-```javascript
-// 무한 스크롤, 페이지네이션 컴포넌트
-function PostList() {
-    const [page, setPage] = useState(0);
-    const { data } = useFetch(`/api/posts?page=${page}&size=10`);
-    
-    return (
-        <>
-            {data.content.map(post => <PostItem post={post} />)}
-            <Pagination 
-                total={data.totalPages} 
-                current={page}
-                onChange={setPage}
-            />
-        </>
-    );
-}
-```
+- 큰 도서관에서 잡지를 한꺼번에 1,000권씩 테이블 위에 올려두면 자리가 부족하고 찾기도 어렵습니다.
+- 대신 10권씩 묶어 진열하고, 다음 묶음이 필요하면 서고에서 가져오면 훨씬 빠르고 편합니다.
+- 페이징도 같은 원리로, 필요한 만큼만 나눠서 전달하면 네트워크와 화면 모두 부담이 줄어듭니다.
 
 #### 스프링부트의 페이징
 
@@ -96,15 +82,11 @@ findByContentContaining() → WHERE content LIKE %?%
 findByTitleAndContent() →  WHERE title = ? AND content = ?
 ```
 
-#### 프론트엔드 비유
+#### 실생활 비유
 
-```javascript
-// Array 메서드처럼 직관적
-posts.filter(post => post.title.includes('검색어'))
-
-// JPA도 비슷
-postRepository.findByTitleContaining('검색어')
-```
+- 서점 직원에게 "제목에 ‘스프링’이 들어간 책을 보여 주세요"라고 요청하면, 직원은 전체 서가를 처음부터 끝까지 살피지 않습니다.
+- 제목 인덱스 카드나 전산 검색을 활용해 '스프링'이 포함된 목록을 빠르게 추린 뒤, 해당 책만 서가에서 꺼내옵니다.
+- JPA의 메서드 이름 규칙도 이런 인덱스 카드처럼, 조건을 말해 주면 필요한 항목만 뽑아 주도록 도와줍니다.
 
 ---
 
@@ -121,6 +103,7 @@ public List<Post> list() {
 ```
 
 **문제점**:
+
 1. **순환 참조**: Post → Board → Posts → Board... (무한 루프)
 2. **민감한 정보 노출**: 비밀번호 같은 필드도 전부 노출
 3. **성능 문제**: 연관된 모든 Entity 조회 (N+1 문제)
@@ -137,7 +120,7 @@ public class PostDTO {
     private String content;
     private String boardName;  // Board 전체 대신 이름만
     private int replyCount;    // 댓글 개수만
-    
+
     // Entity → DTO 변환
     public static PostDTO from(Post post) {
         PostDTO dto = new PostDTO();
@@ -152,30 +135,16 @@ public class PostDTO {
 ```
 
 **장점**:
+
 - 필요한 데이터만 선택적으로 반환
 - 순환 참조 방지
 - API 스펙 명확화
 
-#### 프론트엔드 비유
+#### 실생활 비유
 
-```javascript
-// 백엔드 DB 데이터 (Entity)
-const user = {
-    id: 1,
-    email: 'user@example.com',
-    password: 'hashed_password',  // 민감 정보
-    address: {...},
-    orders: [...]
-};
-
-// 프론트에 보내는 데이터 (DTO)
-const userResponse = {
-    id: 1,
-    email: 'user@example.com',
-    // password는 제외
-    orderCount: user.orders.length  // 개수만
-};
-```
+- 보험 설계사가 고객에게 원본 계약서(수십 페이지)를 그대로 건네기보다는, 필요한 항목만 추린 요약서와 핵심 특약만 정리한 안내문을 제공합니다.
+- 민감한 개인정보나 내부 계산식은 숨기고, 고객이 알아야 할 보장 요약과 금액만 전달하면 이해하기도 쉬워집니다.
+- DTO는 바로 이런 요약서 역할을 하며, 필요한 정보만 담아 안전하고 일관된 응답을 만들 수 있게 도와줍니다.
 
 ---
 
@@ -195,22 +164,22 @@ import java.time.LocalDateTime;
 @Entity
 @Data
 public class Reply {
-    
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-    
+
     @Column(nullable = false)
     private String content;
-    
+
     private String commenter;  // 작성자 (간단하게)
-    
+
     @ManyToOne
     @JoinColumn(name = "post_id")
     private Post post;  // 댓글:게시글 = N:1
-    
+
     private LocalDateTime createdAt;
-    
+
     @PrePersist
     public void prePersist() {
         this.createdAt = LocalDateTime.now();
@@ -230,7 +199,7 @@ import jakarta.persistence.OneToMany;
 @Data
 public class Post {
     // 기존 필드들...
-    
+
     @OneToMany(mappedBy = "post")  // Reply Entity의 post 필드와 매핑
     @JsonIgnore  // 순환 참조 방지
     private List<Reply> replies = new ArrayList<>();
@@ -248,7 +217,7 @@ public class Post {
 페이징 기능을 구현할 때는 **아래에서 위로** 순서대로 작성합니다:
 
 ```
-1. Repository (데이터 접근) 
+1. Repository (데이터 접근)
    ↓
 2. Service (비즈니스 로직)
    ↓
@@ -256,6 +225,7 @@ public class Post {
 ```
 
 **왜 이 순서인가?**
+
 - Repository가 없으면 Service가 동작하지 않음
 - Service가 없으면 Controller가 동작하지 않음
 - **의존성 방향**: Controller → Service → Repository
@@ -268,10 +238,12 @@ public class Post {
 ```
 
 **JpaRepository가 자동 제공하는 페이징 메서드**:
+
 - `Page<T> findAll(Pageable pageable)` - 페이징 전체 조회
 - `Page<T> findAll(Specification<T> spec, Pageable pageable)` - 조건부 페이징
 
 **현재 PostRepository**:
+
 ```java
 // src/main/java/com/project/board/repository/PostRepository.java
 
@@ -283,6 +255,7 @@ public interface PostRepository extends JpaRepository<Post, Long> {
 ```
 
 **추가 메서드가 필요한 경우** (예: 게시판별 페이징):
+
 ```java
 public interface PostRepository extends JpaRepository<Post, Long> {
     // 게시판별 페이징 조회 (JPA Query Method)
@@ -293,6 +266,7 @@ public interface PostRepository extends JpaRepository<Post, Long> {
 #### Step 2: Service에 페이징 메서드 추가
 
 **기존 Service 코드 확인**:
+
 ```java
 // 현재 PostService.java
 public List<Post> findAll() {
@@ -301,6 +275,7 @@ public List<Post> findAll() {
 ```
 
 **페이징 메서드 추가** (기존 메서드는 유지):
+
 ```java
 // src/main/java/com/project/board/service/PostService.java
 
@@ -312,29 +287,30 @@ import org.springframework.data.domain.Pageable;
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class PostService {
-    
+
     private final PostRepository postRepository;
-    
+
     // 기존 메서드 유지 (List 반환)
     public List<Post> findAll() {
         return postRepository.findAll();
     }
-    
+
     // ✅ 새로 추가: 페이징 조회 (Page 반환)
     public Page<Post> findAll(Pageable pageable) {
         return postRepository.findAll(pageable);
     }
-    
+
     // ✅ 선택사항: 게시판별 페이징 조회
     public Page<Post> findByBoardId(Long boardId, Pageable pageable) {
         return postRepository.findByBoardId(boardId, pageable);
     }
-    
+
     // 기존 메서드들도 유지 (findById, save, update, delete 등)
 }
 ```
 
 **주의사항**:
+
 - ✅ 기존 `findAll()` 메서드는 그대로 유지 (하위 호환성)
 - ✅ 새로운 `findAll(Pageable pageable)` 메서드 추가 (오버로딩)
 - ✅ 메서드 이름이 같지만 파라미터가 다르면 다른 메서드로 인식됨 (Java 오버로딩)
@@ -342,6 +318,7 @@ public class PostService {
 #### Step 3: Controller에 페이징 엔드포인트 추가
 
 **기존 Controller 코드 확인**:
+
 ```java
 // 현재 PostController.java
 @GetMapping
@@ -352,6 +329,7 @@ public ResponseEntity<List<Post>> list() {
 ```
 
 **선택지 1: 기존 메서드를 페이징으로 변경** (권장)
+
 ```java
 // src/main/java/com/project/board/controller/PostController.java
 
@@ -365,9 +343,9 @@ import org.springframework.data.domain.Sort;
 @RequestMapping("/api/posts")
 @RequiredArgsConstructor
 public class PostController {
-    
+
     private final PostService postService;
-    
+
     // ✅ 기존 메서드를 페이징으로 변경
     // GET /api/posts?page=0&size=10&sort=id,desc
     @GetMapping
@@ -376,24 +354,25 @@ public class PostController {
             @RequestParam(defaultValue = "10") int size,
             @RequestParam(defaultValue = "id") String sortBy,
             @RequestParam(defaultValue = "DESC") String direction) {
-        
+
         // Sort.Direction 변환
         Sort.Direction sortDirection = Sort.Direction.fromString(direction);
-        
+
         // Pageable 객체 생성 (페이지 번호, 크기, 정렬)
-        Pageable pageable = PageRequest.of(page, size, 
+        Pageable pageable = PageRequest.of(page, size,
                                             Sort.by(sortDirection, sortBy));
-        
+
         // Service 호출 (이제 Page 반환)
         Page<Post> posts = postService.findAll(pageable);
         return ResponseEntity.ok(posts);
     }
-    
+
     // 기존 메서드들 유지 (get, create, update, delete)
 }
 ```
 
 **선택지 2: 페이징 전용 엔드포인트 추가** (기존 API 유지)
+
 ```java
 @GetMapping
 public ResponseEntity<List<Post>> list() {
@@ -408,9 +387,9 @@ public ResponseEntity<Page<Post>> listPaged(
         @RequestParam(defaultValue = "10") int size,
         @RequestParam(defaultValue = "id") String sortBy,
         @RequestParam(defaultValue = "DESC") String direction) {
-    
+
     Sort.Direction sortDirection = Sort.Direction.fromString(direction);
-    Pageable pageable = PageRequest.of(page, size, 
+    Pageable pageable = PageRequest.of(page, size,
                                         Sort.by(sortDirection, sortBy));
     Page<Post> posts = postService.findAll(pageable);
     return ResponseEntity.ok(posts);
@@ -418,6 +397,7 @@ public ResponseEntity<Page<Post>> listPaged(
 ```
 
 **각 코드 라인 설명**:
+
 ```java
 // 1. URL 파라미터 받기
 @RequestParam(defaultValue = "0") int page  // 페이지 번호 (0부터 시작)
@@ -443,6 +423,7 @@ Page<Post> posts = postService.findAll(pageable);
 #### Step 4: 테스트
 
 **Postman 테스트**:
+
 ```
 # 기본 페이징 (파라미터 없으면 기본값 사용)
 GET http://localhost:8080/api/posts
@@ -460,6 +441,7 @@ GET http://localhost:8080/api/posts?page=0&size=10&sort=title&direction=ASC
 ```
 
 **응답 예시**:
+
 ```json
 {
   "content": [
@@ -506,30 +488,32 @@ GET http://localhost:8080/api/posts?page=0&size=10&sort=title&direction=ASC
 ### 3. 검색 기능 구현
 
 #### Repository에 검색 메서드 추가
+
 ```java
 // src/main/java/com/project/board/repository/PostRepository.java
 
 public interface PostRepository extends JpaRepository<Post, Long> {
-    
+
     // 게시판별 조회 (페이징)
     Page<Post> findByBoardId(Long boardId, Pageable pageable);
-    
+
     // 제목으로 검색
     Page<Post> findByTitleContaining(String keyword, Pageable pageable);
-    
+
     // 내용으로 검색
     Page<Post> findByContentContaining(String keyword, Pageable pageable);
-    
+
     // 제목 또는 내용으로 검색
     Page<Post> findByTitleContainingOrContentContaining(
-        String titleKeyword, 
-        String contentKeyword, 
+        String titleKeyword,
+        String contentKeyword,
         Pageable pageable
     );
 }
 ```
 
 #### Service에 검색 메서드 추가
+
 ```java
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -541,9 +525,9 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class PostService {
-    
+
     private final PostRepository postRepository;
-    
+
     // 검색
     public Page<Post> search(String keyword, Pageable pageable) {
         return postRepository.findByTitleContainingOrContentContaining(
@@ -554,21 +538,22 @@ public class PostService {
 ```
 
 #### Controller에 검색 엔드포인트 추가
+
 ```java
 @RestController
 @RequestMapping("/api/posts")
 @RequiredArgsConstructor
 public class PostController {
-    
+
     private final PostService postService;
-    
+
     // GET /api/posts/search?keyword=검색어&page=0&size=10
     @GetMapping("/search")
     public ResponseEntity<Page<Post>> search(
             @RequestParam String keyword,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
-        
+
         Pageable pageable = PageRequest.of(page, size);
         Page<Post> posts = postService.search(keyword, pageable);
         return ResponseEntity.ok(posts);
@@ -581,6 +566,7 @@ public class PostController {
 ### 4. DTO 패턴 적용
 
 #### PostDTO 생성
+
 ```java
 // src/main/java/com/project/board/dto/PostDTO.java
 
@@ -600,16 +586,16 @@ public class PostDTO {
     private String boardName;
     private int replyCount;
     private LocalDateTime createdAt;
-    
+
     // Entity → DTO 변환
     public static PostDTO from(Post post) {
         return PostDTO.builder()
                 .id(post.getId())
                 .title(post.getTitle())
                 .content(post.getContent())
-                .boardName(post.getBoard() != null ? 
+                .boardName(post.getBoard() != null ?
                           post.getBoard().getName() : null)
-                .replyCount(post.getReplies() != null ? 
+                .replyCount(post.getReplies() != null ?
                            post.getReplies().size() : 0)
                 .createdAt(post.getCreatedAt())  // Post Entity에 createdAt 필드가 있는 경우
                 .build();
@@ -619,6 +605,7 @@ public class PostDTO {
 **주의**: Post Entity에 `createdAt` 필드가 없는 경우, 이 줄을 제거하거나 `null`로 설정해야 합니다.
 
 #### Controller에서 DTO 사용
+
 ```java
 import com.project.board.dto.PostDTO;
 import org.springframework.data.domain.Page;
@@ -627,21 +614,21 @@ import org.springframework.data.domain.Page;
 @RequestMapping("/api/posts")
 @RequiredArgsConstructor
 public class PostController {
-    
+
     private final PostService postService;
-    
+
     // DTO로 변환해서 반환
     @GetMapping
     public ResponseEntity<Page<PostDTO>> list(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
-        
+
         Pageable pageable = PageRequest.of(page, size);
         Page<Post> posts = postService.findAll(pageable);
-        
+
         // Entity → DTO 변환
         Page<PostDTO> postDTOs = posts.map(PostDTO::from);
-        
+
         return ResponseEntity.ok(postDTOs);
     }
 }
@@ -652,6 +639,7 @@ public class PostController {
 ### 5. 예외 처리 개선
 
 #### 커스텀 예외 생성
+
 ```java
 // src/main/java/com/project/board/exception/ResourceNotFoundException.java
 
@@ -665,6 +653,7 @@ public class ResourceNotFoundException extends RuntimeException {
 ```
 
 #### 전역 예외 처리
+
 ```java
 // src/main/java/com/project/board/exception/GlobalExceptionHandler.java
 
@@ -680,27 +669,27 @@ import java.util.Map;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
-    
+
     @ExceptionHandler(ResourceNotFoundException.class)
     public ResponseEntity<Map<String, Object>> handleNotFound(
             ResourceNotFoundException e) {
-        
+
         Map<String, Object> errorResponse = new HashMap<>();
         errorResponse.put("success", false);
         errorResponse.put("message", e.getMessage());
         errorResponse.put("timestamp", LocalDateTime.now());
-        
+
         return ResponseEntity.status(HttpStatus.NOT_FOUND)
                              .body(errorResponse);
     }
-    
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<Map<String, Object>> handleException(Exception e) {
         Map<String, Object> errorResponse = new HashMap<>();
         errorResponse.put("success", false);
         errorResponse.put("message", "서버 오류가 발생했습니다.");
         errorResponse.put("timestamp", LocalDateTime.now());
-        
+
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                              .body(errorResponse);
     }
@@ -708,13 +697,14 @@ public class GlobalExceptionHandler {
 ```
 
 #### Service에서 사용
+
 ```java
 @Service
 @RequiredArgsConstructor
 public class PostService {
-    
+
     private final PostRepository postRepository;
-    
+
     public Post findById(Long id) {
         return postRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException(
@@ -729,11 +719,13 @@ public class PostService {
 ## 📝 실습 가이드
 
 ### Step 1: Reply Entity 추가
+
 1. `Reply.java` 생성
 2. `Post`에 `replies` 필드 추가
 3. `ReplyRepository`, `ReplyService`, `ReplyController` 생성
 
 ### Step 2: 페이징 테스트
+
 ```
 # 10개 게시글 생성 (Postman에서 반복)
 POST /api/posts (10번)
@@ -744,6 +736,7 @@ GET /api/posts?page=1&size=5
 ```
 
 ### Step 3: 검색 테스트
+
 ```
 # 게시글 생성 (제목 다양하게)
 POST /api/posts {"title": "스프링부트", ...}
@@ -756,11 +749,13 @@ GET /api/posts/search?keyword=자바
 ```
 
 ### Step 4: DTO 적용
+
 1. `PostDTO.java` 생성
 2. Controller에서 DTO 변환
 3. 순환 참조 해결 확인
 
 ### Step 5: 예외 처리 테스트
+
 ```
 # 존재하지 않는 게시글 조회
 GET /api/posts/999
@@ -772,6 +767,7 @@ GET /api/posts/999
 ## 🎓 다음 단계로
 
 ### 이 단계에서 배운 것
+
 - ✅ 페이징 (Page, Pageable)
 - ✅ 검색 (JPA Query Methods)
 - ✅ DTO 패턴 (Entity 보호)
@@ -779,6 +775,7 @@ GET /api/posts/999
 - ✅ 전역 예외 처리 (@RestControllerAdvice)
 
 ### 아직 부족한 것
+
 - ❌ 사용자 인증 (누가 작성했는지)
 - ❌ 권한 관리 (작성자만 수정/삭제)
 - ❌ 보안 (비밀번호 암호화)
@@ -786,6 +783,7 @@ GET /api/posts/999
 ### 다음 단계 예고: Step 4 - 인증 및 권한 관리
 
 **Step 4에서 배울 것**:
+
 1. **Spring Security**: 스프링 보안 프레임워크
 2. **JWT (JSON Web Token)**: 토큰 기반 인증
 3. **회원가입/로그인**: User Entity, AuthController
@@ -793,6 +791,7 @@ GET /api/posts/999
 5. **작성자 권한 체크**: 본인만 수정/삭제
 
 **예제 API**:
+
 ```
 POST /api/auth/register  - 회원가입
 POST /api/auth/login     - 로그인 (JWT 발급)
@@ -805,16 +804,19 @@ POST /api/posts          - 인증 + 권한 필요
 ## 💡 핵심 정리
 
 ### 페이징이 필요한 이유
+
 - 대량 데이터를 한 번에 조회하면 성능 저하
 - 프론트엔드 렌더링 부담
 - 네트워크 트래픽 증가
 
 ### DTO가 필요한 이유
+
 - Entity 직접 노출은 위험 (민감 정보, 순환 참조)
 - API 스펙과 Entity를 분리
 - 필요한 데이터만 선택적으로 반환
 
 ### 검색 기능 구현 방법
+
 - 간단한 검색: JPA Query Methods
 - 복잡한 검색: QueryDSL (다음 단계에서)
 
@@ -826,4 +828,3 @@ POST /api/posts          - 인증 + 권한 필요
 # 다음 문서
 dont_upload/Step_04_인증_권한_관리.md
 ```
-

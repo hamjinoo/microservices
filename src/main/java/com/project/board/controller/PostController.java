@@ -2,6 +2,10 @@ package com.project.board.controller;
 
 import java.util.List;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -11,6 +15,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.project.board.model.Post;
@@ -27,8 +32,21 @@ public class PostController {
 
   // GET /api/posts - 전체 조회
   @GetMapping
-  public ResponseEntity<List<Post>> list() {
-    List<Post> posts = postService.findAll();
+  public ResponseEntity<Page<Post>> list(
+    @RequestParam(defaultValue = "0") int page,
+    @RequestParam(defaultValue = "10") int size,
+    @RequestParam(defaultValue = "id") String sortBy,
+    @RequestParam(defaultValue = "DESC") String direction) {
+
+    // Sort.Direction 변환
+    Sort.Direction sortDirection = Sort.Direction.fromString(direction);
+
+    // Pageable 객체 생성 (페이지 번호, 크기, 정렬)
+    Pageable pageable = PageRequest.of(page, size,
+                                        Sort.by(sortDirection, sortBy));
+
+    // Service 호출 (이제 Page 반환)
+    Page<Post> posts = postService.findAll(pageable);
     return ResponseEntity.ok(posts);
   }
 

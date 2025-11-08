@@ -188,18 +188,18 @@ curl http://localhost:8080/api/posts/1
 - 프론트엔드 경험과 연결하여 설명
 - 실무 최소 수준의 내용만 포함
 
-### 프론트엔드 비유로 이해하기
+### 실생활 비유로 이해하기
 
-| 백엔드 개념     | 프론트엔드 비유              |
-| --------------- | ---------------------------- |
-| Controller      | React Component              |
-| Service         | Custom Hook / Service 클래스 |
-| Repository      | API 호출 함수 (axios)        |
-| Entity          | TypeScript Interface         |
-| DI Container    | React Context / Provider     |
-| JWT             | localStorage 토큰            |
-| API Gateway     | Nginx 프록시                 |
-| Circuit Breaker | Error Boundary               |
+| 백엔드 개념     | 실생활 비유                               |
+| --------------- | ----------------------------------------- |
+| Controller      | 민원 창구에서 시민을 맞이하는 상담 직원   |
+| Service         | 상담 내용을 바탕으로 해결책을 찾는 내부 팀 |
+| Repository      | 자료 보관소에서 서류를 찾아오는 기록 담당 |
+| Entity          | 서류 양식 또는 카드 한 장                 |
+| DI Container    | 필요한 물품을 정리해 두는 중앙 창고       |
+| JWT             | 신분증이나 출입증처럼 신원을 증명하는 표  |
+| API Gateway     | 건물 정문에서 방문자를 분산시키는 안내데스크 |
+| Circuit Breaker | 과부하 시 전기를 끊어 장비를 보호하는 차단기 |
 
 ### 실습 중심
 

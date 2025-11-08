@@ -34,9 +34,9 @@ http://localhost:8080/post-service/api/posts
 [User Service] [Post] [Comment]
 ```
 
-**프론트엔드 비유**: Nginx, Reverse Proxy
-- 프론트엔드에서 `/api/*` 요청을 백엔드로 프록시하는 것과 유사
-- API Gateway는 모든 마이크로서비스의 프록시 역할
+**실생활 비유**: 아파트 경비실과 택배 분류
+- 택배 차량이 아파트 정문(게이트웨이)에 도착하면 경비실에서 각 동·호수를 확인한 뒤 알맞은 동으로 배분합니다.
+- 방문객도 경비실을 먼저 들러 출입증을 확인받고, 필요한 동에 연결됩니다. API Gateway는 이런 경비실처럼 모든 요청을 한 곳에서 확인하고 알맞은 서비스로 안내합니다.
 
 ---
 
@@ -89,15 +89,9 @@ public interface UserClient {
 UserDTO user = userClient.getUser(userId);  // 끝!
 ```
 
-**프론트엔드 비유**: Axios, React Query
-```javascript
-// Axios Instance (프론트)
-const api = axios.create({ baseURL: '/api' });
-api.get('/users/1');  // 간단!
-
-// Feign Client (백엔드)
-userClient.getUser(1L);  // 똑같이 간단!
-```
+**실생활 비유**: 회사 내선 전화번호부
+- 큰 회사에서는 부서별로 자주 연락하는 전화번호를 내선 번호부에 정리해 두어 직원이 이름만 보고 곧바로 전화할 수 있습니다.
+- Feign Client도 "사용자 서비스에 연락하고 싶다"라고 선언만 하면, 주소와 연락 방법을 자동으로 채워 주는 내선 번호부와 같습니다.
 
 ---
 
@@ -128,16 +122,9 @@ User Service가 다운되면?
 → 성공하면 CLOSED로 복귀
 ```
 
-**프론트엔드 비유**: Error Boundary, Retry Logic
-```javascript
-// React Error Boundary
-<ErrorBoundary fallback={<ErrorMessage />}>
-    <UserComponent />
-</ErrorBoundary>
-
-// Circuit Breaker도 비슷
-// 장애 시 Fallback 반환
-```
+**실생활 비유**: 전기 차단기
+- 집에서 전열기구를 너무 많이 켜면 두꺼비집의 차단기가 내려가 회로를 보호합니다. 잠시 전원을 끊어 주고, 문제가 해결되면 다시 올려서 전원을 공급합니다.
+- Circuit Breaker도 동일하게, 특정 서비스에서 오류가 반복되면 회로를 잠시 끊어 다른 서비스가 영향을 받지 않도록 하고, 상황이 좋아지면 천천히 연결을 재개합니다.
 
 ---
 

@@ -2,6 +2,8 @@ package com.project.board.service;
 
 import java.util.List;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -22,6 +24,16 @@ public class PostService {
   // 전체 조회
   public List<Post> findAll() {
     return postRepository.findAll();
+  }
+
+  // 페이징 조회 (Page 반환)
+  public Page<Post> findAll(Pageable pageable) {
+    return postRepository.findAll(pageable);
+  }
+
+  // 게시판별 페이징 조회
+  public Page<Post> findByBoardId(Long boardId, Pageable pageable) {
+    return postRepository.findByBoardId(boardId, pageable);
   }
 
   // ID로 조회

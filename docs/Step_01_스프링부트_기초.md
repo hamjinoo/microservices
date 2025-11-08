@@ -59,11 +59,11 @@ API 호출 (fetch)     ←→    API 제공 (@RestController)
 - 스프링 프레임워크를 **쉽게 사용**할 수 있도록 만든 도구
 - 설정을 자동화 (Auto Configuration)
 - 내장 서버 제공 (Tomcat)
-- **프론트엔드 비유**: Create React App (CRA)처럼 복잡한 설정 없이 바로 시작
+- **실생활 비유**: 스프링 프레임워크가 땅을 사고 설계부터 전기 공사까지 직접 챙겨야 하는 맞춤형 건축이라면, 스프링부트는 기본 골조와 배선이 모두 갖춰진 모델하우스를 인수받아 가구만 들이면 되는 상황과 비슷합니다.
 
 ```
-Spring Framework = React (직접 모든 설정)
-Spring Boot      = Create React App (설정 자동화)
+Spring Framework = 맞춤형 건물 공사 (설계·자재를 모두 직접 준비)
+Spring Boot      = 기본 설비 완비된 모델하우스 (입주 준비만 하면 됨)
 ```
 
 ---
@@ -109,31 +109,11 @@ public class PostController {
 - 객체 간 결합도가 낮음
 - 변경이 쉬움
 
-#### 프론트엔드 비유: React Context / Provider
+#### 실생활 비유: 식당 주방과 식자재 창고
 
-```jsx
-// React Context - Provider가 값을 주입
-function App() {
-  return (
-    <ThemeProvider value={theme}>
-      <UserProvider value={user}>
-        <HomePage /> {/* 자식 컴포넌트가 Context 값을 받음 */}
-      </UserProvider>
-    </ThemeProvider>
-  );
-}
-
-// HomePage는 직접 만들지 않고 useContext로 받음
-function HomePage() {
-  const theme = useContext(ThemeContext); // Provider가 주입
-  const user = useContext(UserContext); // Provider가 주입
-}
-```
-
-**스프링도 같은 방식**:
-
-- `Provider` = **Spring Container (IoC Container)**
-- `useContext` = **의존성 주입 (Dependency Injection)**
+- 작은 식당에서는 셰프가 매번 시장에 나가 재료를 사 와야 하므로 요리보다 준비에 시간이 많이 들 수 있습니다. (개발자가 객체를 직접 생성)
+- 대형 호텔 주방은 식자재 창고 관리자에게 필요한 재료를 요청하면, 정리된 창고에서 바로 주방으로 재료를 가져다줍니다. (IoC 컨테이너가 객체를 대신 준비)
+- 셰프는 "오늘 스테이크용 고기와 채소가 필요해요"라고만 말하면 되고, 창고 팀이 알맞은 재료를 대신 전달합니다. (의존성을 선언하면 스프링이 주입)
 
 ---
 
@@ -199,7 +179,7 @@ public class PostController {
 #### 스프링 컨테이너
 
 - 객체(빈)를 생성하고 관리하는 곳
-- **프론트엔드 비유**: Redux Store, React Context
+- **실생활 비유**: 대형 호텔의 중앙 비품 창고처럼 필요한 물품을 한곳에 보관하고 각 부서 요청에 따라 즉시 전달합니다.
 
 #### 빈 (Bean)
 
@@ -216,28 +196,19 @@ public class PostService {
 #### 동작 과정
 
 ```
-1. 애플리케이션 시작
+1. 호텔 문을 열어 영업을 시작한다.
    ↓
-2. 스프링이 @Service, @Controller 등을 찾음
+2. 창고 관리자가 오늘 사용할 물품 목록을 확인한다.
    ↓
-3. 객체를 생성해서 스프링 컨테이너에 저장
+3. 필요한 물품을 창고에 준비해 둔다.
    ↓
-4. 필요한 곳에 자동으로 주입
+4. 각 부서(주방, 객실, 연회장)가 요청하면 즉시 전달한다.
 ```
 
-**프론트엔드 비유**:
+**실생활 비유**:
 
-```jsx
-// Provider가 값을 저장하고 제공
-<Provider store={store}>
-  {" "}
-  {/* 스프링 컨테이너 */}
-  <App />
-</Provider>;
-
-// useSelector로 꺼내 씀
-const user = useSelector((state) => state.user); // DI
-```
+- 객실 담당 직원은 "수건 4장과 생수 2병이 필요합니다"라고만 요청하고, 창고 팀이 해당 물품을 골라 즉시 배달해 줍니다.
+- 각 부서는 물품을 직접 사 오지 않고, 창고에서 동일한 기준으로 준비한 물품을 전달받기 때문에 품질과 속도가 일정합니다.
 
 ---
 
@@ -247,16 +218,16 @@ const user = useSelector((state) => state.user); // DI
 
 #### 주요 어노테이션
 
-| 어노테이션               | 역할              | 프론트엔드 비유        |
-| ------------------------ | ----------------- | ---------------------- |
-| `@SpringBootApplication` | 스프링부트 시작점 | `ReactDOM.render()`    |
-| `@RestController`        | REST API 컨트롤러 | API Route Handler      |
-| `@Service`               | 비즈니스 로직     | Service 클래스         |
-| `@Repository`            | 데이터베이스 접근 | API 호출 함수          |
-| `@GetMapping`            | HTTP GET 요청     | `app.get()` (Express)  |
-| `@PostMapping`           | HTTP POST 요청    | `app.post()` (Express) |
-| `@RequestBody`           | JSON → 객체 변환  | `req.body`             |
-| `@PathVariable`          | URL 파라미터      | `req.params`           |
+| 어노테이션               | 역할              | 실생활 비유                                      |
+| ------------------------ | ----------------- | ------------------------------------------------ |
+| `@SpringBootApplication` | 스프링부트 시작점 | 건물 전체 전원을 켜는 메인 차단기를 올리는 일    |
+| `@RestController`        | REST API 컨트롤러 | 고객 전화를 받아 안내하는 콜센터 상담원          |
+| `@Service`               | 비즈니스 로직     | 상담원이 해결책을 찾도록 돕는 내부 전문팀        |
+| `@Repository`            | 데이터베이스 접근 | 기록 보관소에서 필요한 문서를 찾아오는 기록 담당 |
+| `@GetMapping`            | HTTP GET 요청     | 민원 창구에서 기존 서류를 열람해 주는 절차       |
+| `@PostMapping`           | HTTP POST 요청    | 신규 신청서를 접수하는 창구                      |
+| `@RequestBody`           | JSON → 객체 변환  | 제출된 서류 내용을 시스템에 입력하는 직원        |
+| `@PathVariable`          | URL 파라미터      | 주소에서 동·호수를 확인해 정확한 집을 찾는 일    |
 
 ---
 
@@ -298,16 +269,14 @@ src/
 └── test/                                    # 테스트 코드
 ```
 
-**프론트엔드 비유**:
+**실생활 비유**:
 
-```
-src/
-├── components/        ←→  controller/
-├── services/          ←→  service/
-├── api/               ←→  repository/
-├── types/             ←→  model/
-└── config/            ←→  resources/
-```
+- 회사 조직도를 떠올리면 이해하기 쉽습니다.
+  - 영업팀(controller)은 고객과 직접 소통하고,
+  - 기획팀(service)은 해결책을 설계하며,
+  - 기록관리팀(repository)은 서류를 보관합니다.
+  - 인사팀(model)은 구성원 정보를 정리하고,
+  - 총무팀(resources)은 건물 관리와 각종 설정을 담당합니다.
 
 ---
 
@@ -374,14 +343,9 @@ public class HelloController {
 - `@RequestMapping("/api")`: 이 컨트롤러의 모든 메서드는 `/api`로 시작
 - `@GetMapping("/hello")`: HTTP GET 요청을 처리
 
-**프론트엔드 비유**:
+**실생활 비유**:
 
-```javascript
-// Express.js
-app.get("/api/hello", (req, res) => {
-  res.send("Hello, Spring Boot!");
-});
-```
+- 시청 민원실에 "안녕하세요"라고 묻는 사람이 오면 담당 직원이 준비된 안내문을 건네주는 것과 같습니다. 민원 창구(컨트롤러)는 요청을 받고, 정해진 답변(서비스 결과)을 전달합니다.
 
 ---
 
